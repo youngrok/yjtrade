@@ -13,5 +13,3 @@ urlpatterns = patterns('',
     url(r'^initial_box', views.initial_box),
     url(r'^admin/', include(admin.site.urls)),
 )
-
-cyboplus.initialize()
