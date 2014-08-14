@@ -1,7 +1,7 @@
 from django.conf.urls import patterns, include, url
 
 from django.contrib import admin
-from trade import views
+from trade import views, cyboplus
 
 admin.autodiscover()
 
@@ -13,3 +13,5 @@ urlpatterns = patterns('',
     url(r'^initial_box', views.initial_box),
     url(r'^admin/', include(admin.site.urls)),
 )
+
+cyboplus.initialize()
