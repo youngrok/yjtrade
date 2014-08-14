@@ -1,0 +1,8 @@
+{
+  "name": "yjtrade",
+  "dependencies": {
+    "bootstrap": "",
+    "jquery": "",
+    "font-awesome": ""
+  }
+}

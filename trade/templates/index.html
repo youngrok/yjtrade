@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>영재 트레이더</title>
+    <link rel="stylesheet" type="text/css" href="${'packages/bootstrap/dist/css/bootstrap.css'|static}">
+</head>
+<body>
+<div class="container">
+    <h1>영재 트레이더</h1>
+    <div class="row">
+        <h2>거래 설정</h2>
+        <div class="col-sm-6 panel panel-default">
+            <form class="panel-body form-horizontal">
+                <div class="form-group">
+                    <label class="col-xs-4 control-label">기준고가</label>
+                    <div class="col-xs-8">
+                        <input type="number" name="high" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-xs-4 control-label">기준저가</label>
+                    <div class="col-xs-8">
+                        <input type="number" name="low" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-xs-4 control-label">현재가</label>
+                    <div class="col-xs-8">
+                        <input type="number" name="current" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-xs-offset-4 col-xs-8">
+                        <button class="btn btn-default">자동계산</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-sm-6 panel panel-default">
+            <form class="panel-body form-horizontal">
+                <div class="form-group">
+                    <label class="col-xs-4 control-label">A 물량</label>
+                    <div class="col-xs-8">
+                        <input type="number" name="amount_a" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-xs-4 control-label">B 물량 </label>
+                    <div class="col-xs-8">
+                        <input type="number" name="amount_b" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-xs-4 control-label">Risk</label>
+                    <div class="col-xs-8">
+                        <input type="number" name="risk" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-xs-offset-4 col-xs-8">
+                        <button class="btn btn-success">실행</button>
+                        <button class="btn btn-danger">중지</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <h2>거래기록</h2>
+        <pre>
+        </pre>
+
+        <table class="table-bordered">
+            <tbody>
+                <tr>
+                    <th>현재 손익</th>
+                    <td class="current-profit">0</td>
+                    <th>누적 손익</th>
+                    <td class="cumulative-profit">0</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>
