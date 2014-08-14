@@ -4,11 +4,15 @@
     <meta charset="UTF-8">
     <title>영재 트레이더</title>
     <link rel="stylesheet" type="text/css" href="${'packages/bootstrap/dist/css/bootstrap.css'|static}">
-    <script type="text/javascript" src="${'packages/dist/jquery.js'|static}"></script>
+    <script type="text/javascript" src="${'packages/jquery/dist/jquery.js'|static}"></script>
     <script type="text/javascript">
-        $('#initial-box-button').click(function() {
-            $.getJSON('/initial_box', function(res) {
-                $('#number-high').val(res.high)
+        $(document).ready(function() {
+            $('#initial-box-button').click(function() {
+                $.getJSON('/initial_box', {}, function(res) {
+                    $('#number-high').val(res.high)
+                    $('#number-low').val(res.low)
+                })
+                return false
             })
         })
     </script>
@@ -42,7 +46,7 @@
 
                 <div class="form-group">
                     <div class="col-xs-offset-4 col-xs-8">
-                        <button id="initial-box-button" class="btn btn-default">자동계산</button>
+                        <a href="#" id="initial-box-button" class="btn btn-default">자동계산</a>
                     </div>
                 </div>
             </form>
