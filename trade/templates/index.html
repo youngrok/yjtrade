@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <title>영재 트레이더</title>
     <link rel="stylesheet" type="text/css" href="${'packages/bootstrap/dist/css/bootstrap.css'|static}">
+    <script type="text/javascript" src="${'packages/dist/jquery.js'|static}"></script>
+    <script type="text/javascript">
+        $('#initial-box-button').click(function() {
+            $.getJSON('/initial_box', function(res) {
+                $('#number-high').val(res.high)
+            })
+        })
+    </script>
 </head>
 <body>
 <div class="container">
@@ -15,7 +23,7 @@
                 <div class="form-group">
                     <label class="col-xs-4 control-label">기준고가</label>
                     <div class="col-xs-8">
-                        <input type="number" name="high" class="form-control">
+                        <input type="number" name="high" id="number-high" class="form-control">
                     </div>
                 </div>
                 <div class="form-group">
@@ -34,7 +42,7 @@
 
                 <div class="form-group">
                     <div class="col-xs-offset-4 col-xs-8">
-                        <button class="btn btn-default">자동계산</button>
+                        <button id="initial-box-button" class="btn btn-default">자동계산</button>
                     </div>
                 </div>
             </form>
