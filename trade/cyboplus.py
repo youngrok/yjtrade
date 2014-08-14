@@ -1,5 +1,5 @@
 # coding: utf8
-import win32com
+import win32com.client
 from datetime import datetime
 
 cyboplus = None
