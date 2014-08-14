@@ -7,7 +7,7 @@ cyboplus = None
 
 def initialize():
     global cyboplus
-    if cyboplus: return
+    if not cyboplus: return
 
     cyboplus = CyboPlus()
     print 'initialized'
