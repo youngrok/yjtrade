@@ -97,7 +97,7 @@ class YJTrader(object):
         try:
             return Box.objects.get(date=self.today())
         except:
-            raise Exception(u'박스를 먼저 로딩하셈.')
+            raise Exception(u'Load box first.')
 
     def load_initial_box(self):
 
