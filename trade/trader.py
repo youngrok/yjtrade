@@ -168,10 +168,10 @@ class YJTrader(object):
                 d = self.chart.GetDataValue(0, i)
                 t = int(self.chart.GetDataValue(1, i))
 
-                if str(int(d)) != now.strftime('%Y%m%d'): continue
-
                 dt = timezone.get_current_timezone().localize(datetime(year=now.year, month=now.month, day=now.day,
                                                                        hour=t / 100, minute=t % 100, second=0))
+
+                print t, dt
 
                 if MinuteBar.objects.filter(time=dt).count() == 0:
                     bar = MinuteBar.objects.create(time=dt, period=time(minute=15),
