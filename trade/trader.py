@@ -109,7 +109,7 @@ class YJTrader(object):
         except:
             now = datetime.now()
 
-            self.chart.SetInputValue(0, 'CLU14')
+            self.chart.SetInputValue(0, 'CLV14')
             self.chart.SetInputValue(1, '2')  # 요청구분
             self.chart.SetInputValue(4, 15)  # 요청개수
             self.chart.SetInputValue(5, [5, 4, 1, 0])  # 종가
@@ -118,7 +118,7 @@ class YJTrader(object):
             self.chart.SetInputValue(8, '1')
             self.chart.BlockRequest()
             num = self.chart.GetHeaderValue(3)
-            print 'loading ', num, ' minute bars for box'
+
             low_values = []
             high_values = []
             for i in range(num):
