@@ -156,7 +156,7 @@ class YJTrader(object):
 
             self.chart.SetInputValue(0, 'CLV14')
             self.chart.SetInputValue(1, '2')  # 요청구분
-            self.chart.SetInputValue(4, 5)  # 요청개수
+            self.chart.SetInputValue(4, 10)  # 요청개수
             self.chart.SetInputValue(5, [0, 1, 3, 4, 5, 6])
             self.chart.SetInputValue(6, ord('m'))  # 분봉
             self.chart.SetInputValue(7, 15)
