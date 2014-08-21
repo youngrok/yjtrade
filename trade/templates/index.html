@@ -9,12 +9,79 @@
         $(document).ready(function() {
             $('#initial-box-button').click(function() {
                 $.getJSON('/initial_box', {}, function(res) {
-                    $('#number-high').val(res.high)
-                    $('#number-low').val(res.low)
+                    $('#box-high').val(res.high)
+                    $('#box-low').val(res.low)
                 })
                 return false
             })
+            $('#start-button').click(function() {
+                $.getJSON('/start', {}, function(res) {
+                    if (res.error) {
+                        alert(res.error)
+                        return
+                    }
+                    showStatus(res.running)
+                })
+                return false
+            })
+            $('#stop-button').click(function() {
+                $.getJSON('/stop', {}, function(res) {
+                    showStatus(res.running)
+                })
+                return false
+            })
+
+            loadStatus()
+
+            setInterval(function() {
+                loadStatus()
+            }, 30000)
         })
+
+        var last_minute_bar = 0;
+        var last_current_price = 0;
+        function loadStatus() {
+            $.getJSON('/status', {'last_minute_bar': last_minute_bar, 'last_price': last_current_price}, function(res) {
+                showStatus(res.running)
+                $('#amount_a').val(res.configuration.amount_a)
+                $('#amount_b').val(res.configuration.amount_b)
+                if (res.box) {
+                    $('#box-high').val(res.box.high)
+                    $('#box-low').val(res.box.low)
+                }
+                $('#minute-bars').html('')
+                for (var i = 0; i < res.minute_bars.length; i++) {
+                    var date = new Date(Date.parse(res.minute_bars[i].time))
+                    $('#minute-bars').append('<tr><td>' + date.getHours() + ':' + date.getMinutes() + '</td>'
+                            + '<td>' + res.minute_bars[i].start + '</td>'
+                            + '<td>' + res.minute_bars[i].end + '</td>'
+                            + '<td>' + res.minute_bars[i].high + '</td>'
+                            + '<td>' + res.minute_bars[i].low + '</td>'
+                            + '</tr>')
+                }
+                $('#trades').html('')
+                for (var i = 0; i < res.trades.length; i++) {
+                    var date = new Date(Date.parse(res.trades[i].datetime))
+                    $('#trades').append('<tr><td>' + date.getHours() + ':' + date.getMinutes() + '</td>'
+                            + '<td>' + res.trades[i].type + '</td>'
+                            + '<td>' + res.trades[i].price + '</td>'
+                            + '<td>' + res.trades[i].amount + '</td>'
+                            + '</tr>')
+                }
+            })
+        }
+
+        function showStatus(running) {
+            if (running) {
+                $('#start-button').attr('disabled', 'disabled')
+                $('#stop-button').removeAttr('disabled')
+            } else {
+                $('#stop-button').attr('disabled', 'disabled')
+                $('#start-button').removeAttr('disabled')
+            }
+
+        }
+
     </script>
 </head>
 <body>
@@ -23,17 +90,18 @@
     <div class="row">
         <h2>거래 설정</h2>
         <div class="col-sm-6 panel panel-default">
-            <form class="panel-body form-horizontal">
+            <form class="panel-body form-horizontal" action="/set_box" method="POST" onsubmit="if (!$.isNumeric(this.high.value) && !$.isNumeric(this.low.value)) { alert('값이 비었음'); return false; }">
+                <input type="hidden" name="csrfmiddlewaretoken" value="${csrf_token}">
                 <div class="form-group">
                     <label class="col-xs-4 control-label">기준고가</label>
                     <div class="col-xs-8">
-                        <input type="number" name="high" id="number-high" class="form-control">
+                        <input type="number" step="any" name="high" id="box-high" class="form-control">
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="col-xs-4 control-label">기준저가</label>
                     <div class="col-xs-8">
-                        <input type="number" name="low" class="form-control">
+                        <input type="number" step="any" name="low" id="box-low" class="form-control">
                     </div>
                 </div>
 
@@ -46,7 +114,8 @@
 
                 <div class="form-group">
                     <div class="col-xs-offset-4 col-xs-8">
-                        <a href="#" id="initial-box-button" class="btn btn-default">자동계산</a>
+                        <a href="#" id="initial-box-button" class="btn btn-default">박스 데이터 읽기</a>
+                        <input type="submit" id="set-box-button" class="btn btn-default" value="박스 수동 설정">
                     </div>
                 </div>
             </form>
@@ -56,13 +125,13 @@
                 <div class="form-group">
                     <label class="col-xs-4 control-label">A 물량</label>
                     <div class="col-xs-8">
-                        <input type="number" name="amount_a" class="form-control">
+                        <input type="number" id="amount_a" name="amount_a" class="form-control">
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="col-xs-4 control-label">B 물량 </label>
                     <div class="col-xs-8">
-                        <input type="number" name="amount_b" class="form-control">
+                        <input type="number" id="amount_b" name="amount_b" class="form-control">
                     </div>
                 </div>
 
@@ -75,18 +144,14 @@
 
                 <div class="form-group">
                     <div class="col-xs-offset-4 col-xs-8">
-                        <button class="btn btn-success">실행</button>
-                        <button class="btn btn-danger">중지</button>
+                        <button id="start-button" class="btn btn-success">실행</button>
+                        <button id="stop-button" class="btn btn-danger">중지</button>
                     </div>
                 </div>
             </form>
         </div>
 
-        <h2>거래기록</h2>
-        <pre>
-        </pre>
-
-        <table class="table-bordered">
+        <table>
             <tbody>
                 <tr>
                     <th>현재 손익</th>
@@ -96,6 +161,39 @@
                 </tr>
             </tbody>
         </table>
+
+        <div class="col-sm-6">
+            <h4>거래기록</h4>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>시각</th>
+                        <th>타입</th>
+                        <th>가격</th>
+                        <th>수량</th>
+                    </tr>
+                </thead>
+                <tbody id="trades">
+                </tbody>
+            </table>
+        </div>
+        <div class="col-sm-6">
+            <h4>15분봉</h4>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>시각</th>
+                        <th>시가</th>
+                        <th>종가</th>
+                        <th>고가</th>
+                        <th>저가</th>
+                    </tr>
+                </thead>
+                <tbody id="minute-bars">
+                </tbody>
+            </table>
+        </div>
+
     </div>
 </div>
 
