@@ -141,10 +141,10 @@ class YJTrader(object):
         if self.sched.running: return
         self.sched.start()
 
-        self.current = self.client.Dispatch("CpForeDib.OvFutCur")
-        self.client.WithEvents(self.current, self)
-        self.current.SetInputValue(0, 'CLU14')
-        self.current.Subscribe()
+        # self.current = self.client.Dispatch("CpForeDib.OvFutCur")
+        # self.client.WithEvents(self.current, self)
+        # self.current.SetInputValue(0, 'CLU14')
+        # self.current.Subscribe()
 
     def stop(self):
         if self.sched and self.sched.running:
