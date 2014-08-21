@@ -118,6 +118,7 @@ class YJTrader(object):
             self.chart.SetInputValue(8, '1')
             self.chart.BlockRequest()
             num = self.chart.GetHeaderValue(3)
+            print 'loading ', num, ' minute bars for box'
             low_values = []
             high_values = []
             for i in range(num):
