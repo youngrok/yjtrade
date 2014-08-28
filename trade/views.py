@@ -16,6 +16,7 @@ def index(request):
 
 def initial_box(request):
     box = trader.trader.load_initial_box()
+    print 'loaded', box
 
     return JSONResponse({
         'high': box.high,
@@ -41,7 +42,7 @@ def start(request):
     try:
         trader.trader.start()
         return HttpResponse(json.dumps({
-            'running': trader.trader.sched.running,
+            'running': trader.trader.running,
         }))
     except Exception as e:
         return JSONResponse({'error': unicode(e)})
@@ -50,28 +51,33 @@ def start(request):
 def stop(request):
     trader.trader.stop()
     return HttpResponse(json.dumps({
-        'running': trader.trader.sched.running,
+        'running': trader.trader.running,
     }))
 
 
 def status(request):
+    now = datetime.now()
     try:
         conf = Configuration.objects.get()
     except:
         conf = Configuration.objects.create(amount_a=0, amount_b=0)
-    data = {
-        'current_price': 0,
-        'running': trader.trader.sched.running,
-        'configuration': model_to_dict(conf)
-    }
-    data['minute_bars'] = list(MinuteBar.objects.all().order_by('-time').values()[0:15])
-    data['trades'] = list(Trade.objects.all().order_by('-datetime').values()[0:15])
 
     try:
         box = trader.trader.box()
+        if now.minute in range(0, 59, 5) or request.GET.get('force', 'false') == 'true':
+            trader.trader.load_minute_bar()
+
+        data = {
+            'current_price': 0,
+            'running': trader.trader.running,
+            'configuration': model_to_dict(conf)
+        }
         data['box'] = model_to_dict(box)
+        data['minute_bars'] = list(MinuteBar.objects.all().order_by('-time').values()[0:15])
+        data['trades'] = list(Trade.objects.all().select_related().order_by('-datetime').values()[0:15])
     except:
         traceback.print_exc()
+
 
     return JSONResponse(data)
 

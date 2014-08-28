@@ -40,8 +40,8 @@
 
         var last_minute_bar = 0;
         var last_current_price = 0;
-        function loadStatus() {
-            $.getJSON('/status', {'last_minute_bar': last_minute_bar, 'last_price': last_current_price}, function(res) {
+        function loadStatus(force) {
+            $.getJSON('/status', {'force': true}, function(res) {
                 showStatus(res.running)
                 $('#amount_a').val(res.configuration.amount_a)
                 $('#amount_b').val(res.configuration.amount_b)
@@ -63,11 +63,14 @@
                 for (var i = 0; i < res.trades.length; i++) {
                     var date = new Date(Date.parse(res.trades[i].datetime))
                     $('#trades').append('<tr><td>' + date.getHours() + ':' + date.getMinutes() + '</td>'
+                            + '<td>' + res.trades[i].minutebar.time + '</td>'
                             + '<td>' + res.trades[i].type + '</td>'
                             + '<td>' + res.trades[i].price + '</td>'
                             + '<td>' + res.trades[i].amount + '</td>'
                             + '</tr>')
                 }
+
+                $('#last-updated').html(new Date())
             })
         }
 
@@ -162,12 +165,17 @@
             </tbody>
         </table>
 
+        <div class="alert alert-success">
+            마지막 업데이트 시각: <span id="last-updated"></span>
+            <a href="javascript:loadStatus(true);" class="btn btn-default">지금 업데이트</a>
+        </div>
         <div class="col-sm-6">
             <h4>거래기록</h4>
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>시각</th>
+                        <th>거래시각</th>
+                        <th>15분봉</th>
                         <th>타입</th>
                         <th>가격</th>
                         <th>수량</th>

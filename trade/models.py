@@ -15,6 +15,8 @@ class MinuteBar(models.Model):
     high = models.DecimalField(max_digits=10, decimal_places=2)
     low = models.DecimalField(max_digits=10, decimal_places=2)
 
+    def __unicode__(self):
+        return '%s %s %s %s %s %s', self.time, self.period, self.start, self.end, self.high, self.low
 
 class Price(models.Model):
     time = models.DateTimeField(db_index=True)
@@ -22,6 +24,7 @@ class Price(models.Model):
 
 
 class Trade(models.Model):
+    minutebar = models.ForeignKey(MinuteBar, null=True)
     datetime = models.DateTimeField(auto_now_add=True, db_index=True)
     type = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10, decimal_places=2)

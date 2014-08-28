@@ -70,6 +70,10 @@ class MockClient(object):
         pass
 
 
+class NoBoxException(Exception):
+    pass
+
+
 class YJTrader(object):
     def __init__(self):
         try:
@@ -79,12 +83,9 @@ class YJTrader(object):
 
         self.client = client
         self.chart = self.client.Dispatch("CpForeDib.OvFutureChart")
-        self.sched = BackgroundScheduler()
-        self.sched.add_job(self.load_minute_bar, CronTrigger(year="*", month="*", day="*", day_of_week="*", minute='*'))
-
-    def start(self):
-        self.sched.start()
-        print 'sched started'
+        self.running = False
+        # self.sched = BackgroundScheduler()
+        # self.sched.add_job(self.load_minute_bar, CronTrigger(year="*", month="*", day="*", day_of_week="*", minute='*'))
 
     def today(self):
         today = date.today()
@@ -99,15 +100,16 @@ class YJTrader(object):
         except:
             print self.today()
             traceback.print_exc()
-            raise Exception(u'Load box first.')
+            raise NoBoxException(u'Load box first.')
 
     def load_initial_box(self):
 
         try:
             return self.box()
 
-        except:
+        except NoBoxException:
             now = datetime.now()
+            print 'loading box', now
 
             self.chart.SetInputValue(0, 'CLV14')
             self.chart.SetInputValue(1, '2')  # 요청구분
@@ -135,11 +137,15 @@ class YJTrader(object):
 
             return Box.objects.create(date=self.today(), high=max(*high_values), low=min(*low_values))
 
+        except:
+            traceback.print_exc()
+
     def start(self):
         self.box()
+        self.running = True
 
-        if self.sched.running: return
-        self.sched.start()
+        # if self.sched.running: return
+        # self.sched.start()
 
         # self.current = self.client.Dispatch("CpForeDib.OvFutCur")
         # self.client.WithEvents(self.current, self)
@@ -147,8 +153,9 @@ class YJTrader(object):
         # self.current.Subscribe()
 
     def stop(self):
-        if self.sched and self.sched.running:
-            self.sched.shutdown()
+        self.running = False
+        # if self.sched and self.sched.running:
+        #     self.sched.shutdown()
 
     def load_minute_bar(self):
         try:
@@ -180,12 +187,16 @@ class YJTrader(object):
                                                    start=self.chart.GetDataValue(2, i),
                                                    end=self.chart.GetDataValue(5, i))
 
+                    print 'loaded minute bar ', bar.time, bar.start, bar.end
+
                     self.buy_if_matched(bar)
 
         except:
             traceback.print_exc()
 
     def buy_if_matched(self, bar):
+        if not self.running: return
+        
         conf = Configuration.objects.get()
         box = self.box()
 
