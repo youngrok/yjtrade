@@ -40,6 +40,7 @@
 
         var last_minute_bar = 0;
         var last_current_price = 0;
+
         function loadStatus(force) {
             $.getJSON('/status', {'force': true}, function(res) {
                 showStatus(res.running)
@@ -69,6 +70,8 @@
                             + '<td>' + res.trades[i].amount + '</td>'
                             + '</tr>')
                 }
+
+                $('#current-price').html(res.current_price)
 
                 $('#last-updated').html(new Date())
             })
@@ -111,7 +114,7 @@
                 <div class="form-group">
                     <label class="col-xs-4 control-label">현재가</label>
                     <div class="col-xs-8">
-                        <span id="current-price" class="form-control"></span>
+                        <code id="current-price" class=""></code>
                     </div>
                 </div>
 

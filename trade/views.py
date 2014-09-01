@@ -45,6 +45,7 @@ def start(request):
             'running': trader.trader.running,
         }))
     except Exception as e:
+        traceback.print_exc()
         return JSONResponse({'error': unicode(e)})
 
 
@@ -68,7 +69,7 @@ def status(request):
             trader.trader.load_minute_bar()
 
         data = {
-            'current_price': 0,
+            'current_price': trader.trader.current_price,
             'running': trader.trader.running,
             'configuration': model_to_dict(conf)
         }

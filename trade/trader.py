@@ -83,7 +83,31 @@ class YJTrader(object):
 
         self.client = client
         self.chart = self.client.Dispatch("CpForeDib.OvFutureChart")
+        self.current_price = 0
         self.running = False
+
+        class EventHandler(object):
+            def __init__(self):
+                print 'init'
+                pass
+
+            def __getattr__(self, name):
+                print name
+                return super(EventHandler, self).__getattr__(self, name)
+
+            def OnReceived(this):
+                print 'OnReceived'
+                self.current_price = self.current.GetHeaderValue(7)
+                print self.current_price
+
+        self.current = self.client.Dispatch("CpForeDib.OvFutCur")
+        self.client.WithEvents(self.current, EventHandler)
+        self.current.SetInputValue(0, 'CLV14')
+        self.current.Subscribe()
+
+        print 'subscribed'
+
+        
         # self.sched = BackgroundScheduler()
         # self.sched.add_job(self.load_minute_bar, CronTrigger(year="*", month="*", day="*", day_of_week="*", minute='*'))
 
@@ -147,11 +171,6 @@ class YJTrader(object):
         # if self.sched.running: return
         # self.sched.start()
 
-        # self.current = self.client.Dispatch("CpForeDib.OvFutCur")
-        # self.client.WithEvents(self.current, self)
-        # self.current.SetInputValue(0, 'CLU14')
-        # self.current.Subscribe()
-
     def stop(self):
         self.running = False
         # if self.sched and self.sched.running:
@@ -196,7 +215,7 @@ class YJTrader(object):
 
     def buy_if_matched(self, bar):
         if not self.running: return
-        
+
         conf = Configuration.objects.get()
         box = self.box()
 
@@ -208,8 +227,11 @@ class YJTrader(object):
             Trade.objects.create(datetime=timezone.now(), type='b-in-down', price=bar.end, amount=conf.amount_b)
 
 
-    def OnReceived(self):
-        self.current_value = self.current.GetHeaderValue(7)
 
 
 trader = YJTrader()
+
+import time 
+while True:
+    print "This prints once a minute."
+    time.sleep(60)
