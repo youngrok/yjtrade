@@ -200,10 +200,10 @@ class YJTrader(object):
                     bar = MinuteBar.objects.create(time=dt, period=time(minute=15),
                                                    low=self.chart.GetDataValue(4, i),
                                                    high=self.chart.GetDataValue(3, i),
-                                                   start=self.chart.GetDataValue(2, i),
+                                                   begin=self.chart.GetDataValue(2, i),
                                                    end=self.chart.GetDataValue(5, i))
 
-                    print 'loaded minute bar ', bar.time, bar.start, bar.end
+                    print 'loaded minute bar ', bar.time, bar.begin, bar.end
 
                     self.buy_if_matched(bar)
 
@@ -216,12 +216,76 @@ class YJTrader(object):
         conf = Configuration.objects.get()
         box = self.box()
 
-        if bar.start < box.high < bar.end:
-            Trade.objects.create(datetime=timezone.now(), type='a-in-up', price=bar.end, amount=conf.amount_a)
-            Trade.objects.create(datetime=timezone.now(), type='b-in-up', price=bar.end, amount=conf.amount_b)
-        elif bar.start > box.low > bar.end:
-            Trade.objects.create(datetime=timezone.now(), type='a-in-down', price=bar.end, amount=conf.amount_a)
-            Trade.objects.create(datetime=timezone.now(), type='b-in-down', price=bar.end, amount=conf.amount_b)
+        if bar.begin < box.high < bar.end:
+            Trade.objects.create(minutebar=bar, type='a-enter-buy', price=bar.end, amount=conf.amount_a)
+            Trade.objects.create(minutebar=bar, type='b-enter-buy', price=bar.end, amount=conf.amount_b)
+        elif bar.begin > box.low > bar.end:
+            Trade.objects.create(minutebar=bar, type='a-enter-sell', price=bar.end, amount=conf.amount_a)
+            Trade.objects.create(minutebar=bar, type='b-enter-sell', price=bar.end, amount=conf.amount_b)
+
+    def out_if_matched(self):
+        if not self.running: return
+
+        ten = MinuteBar.objects.order_by('-time')[:10]
+        mean = sum([bar.end for bar in ten]) / 10.0
+
+        for trade in Trade.objects.filter(type='a-enter-buy', status='in'):
+            if trade.current_price <= trade.minutebar.low:
+                Trade.objects.create(minutebar=trade.minutebar, 
+                                     type='a-exit-buy-loss', 
+                                     price=trade.current_price,
+                                     amount=trade.amount,
+                                     status='out')
+                trade.status = 'out'
+                trade.save()
+
+            elif ten[0].begin > mean > ten[0].end:
+                Trade.objects.create(minutebar=trade.minutebar, 
+                                     type='a-exit-buy-profit', 
+                                     price=trade.current_price,
+                                     amount=trade.amount,
+                                     status='out')
+                trade.status = 'out'
+                trade.save()
+
+        for trade in Trade.objects.filter(type='a-enter-sell', status='in'):
+            if trade.current_price >= trade.minutebar.low:
+                Trade.objects.create(minutebar=trade.minutebar, 
+                                     type='a-exit-sell-loss', 
+                                     price=trade.current_price,
+                                     amount=trade.amount,
+                                     status='out')
+                trade.status = 'out'
+                trade.save()
+
+            elif ten[0].begin < mean < ten[0].end:
+                Trade.objects.create(minutebar=trade.minutebar, 
+                                     type='a-exit-sell-profit', 
+                                     price=trade.current_price,
+                                     amount=trade.amount,
+                                     status='out')
+                trade.status = 'out'
+                trade.save()
+
+        for trade in Trade.objects.filter(type='b-enter-buy', status='in'):
+            if trade.current_price >= box.high + 3:
+                Trade.objects.create(minutebar=trade.minutebar, 
+                                     type='b-exit-buy', 
+                                     price=trade.current_price,
+                                     amount=trade.amount,
+                                     status='out')
+                trade.status = 'out'
+                trade.save()
+
+        for trade in Trade.objects.filter(type='b-enter-sell', status='in'):
+            if trade.current_price <= box.low - 3:
+                Trade.objects.create(minutebar=trade.minutebar, 
+                                     type='b-exit-sell', 
+                                     price=trade.current_price,
+                                     amount=trade.amount,
+                                     status='out')
+                trade.status = 'out'
+                trade.save()
 
 
 trader = YJTrader()

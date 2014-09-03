@@ -34,7 +34,7 @@
             loadStatus()
 
             setInterval(function() {
-                loadStatus()
+                loadStatus(f)
             }, 1000)
         })
 
@@ -54,7 +54,7 @@
                 for (var i = 0; i < res.minute_bars.length; i++) {
                     var date = new Date(Date.parse(res.minute_bars[i].time))
                     $('#minute-bars').append('<tr><td>' + date.getHours() + ':' + date.getMinutes() + '</td>'
-                            + '<td>' + res.minute_bars[i].start + '</td>'
+                            + '<td>' + res.minute_bars[i].begin + '</td>'
                             + '<td>' + res.minute_bars[i].end + '</td>'
                             + '<td>' + res.minute_bars[i].high + '</td>'
                             + '<td>' + res.minute_bars[i].low + '</td>'
@@ -62,7 +62,7 @@
                 }
                 $('#trades').html('')
                 for (var i = 0; i < res.trades.length; i++) {
-                    var date = new Date(Date.parse(res.trades[i].datetime))
+                    var date = new Date(Date.parse(res.trades[i].updated))
                     $('#trades').append('<tr><td>' + date.getHours() + ':' + date.getMinutes() + '</td>'
                             + '<td>' + res.trades[i].minutebar.time + '</td>'
                             + '<td>' + res.trades[i].type + '</td>'
