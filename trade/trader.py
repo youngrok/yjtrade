@@ -226,6 +226,7 @@ class YJTrader(object):
     def out_if_matched(self):
         if not self.running: return
 
+        box = self.box()
         ten = MinuteBar.objects.order_by('-time')[:10]
         mean = sum([bar.end for bar in ten]) / 10.0
 
@@ -268,7 +269,7 @@ class YJTrader(object):
                 trade.save()
 
         for trade in Trade.objects.filter(type='b-enter-buy', status='in'):
-            if trade.current_price >= box.high + 3:
+            if trade.current_price >= box.high + 0.03:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='b-exit-buy', 
                                      price=trade.current_price,
@@ -278,7 +279,7 @@ class YJTrader(object):
                 trade.save()
 
         for trade in Trade.objects.filter(type='b-enter-sell', status='in'):
-            if trade.current_price <= box.low - 3:
+            if trade.current_price <= box.low - 0.03:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='b-exit-sell', 
                                      price=trade.current_price,
