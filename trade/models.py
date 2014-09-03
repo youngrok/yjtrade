@@ -16,7 +16,7 @@ class MinuteBar(models.Model):
     low = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __unicode__(self):
-        return '%s %s %s %s %s %s', self.time, self.period, self.begin, self.end, self.high, self.low
+        return '%s %s %s %s %s %s' % self.time, self.period, self.begin, self.end, self.high, self.low
 
 class Price(models.Model):
     time = models.DateTimeField(db_index=True)
