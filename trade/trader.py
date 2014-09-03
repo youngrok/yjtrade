@@ -8,7 +8,8 @@ from apscheduler.triggers.cron import CronTrigger
 from django.utils import timezone
 import pytz
 from trade.models import Box, MinuteBar, Trade, Configuration
-
+from threading import Thread
+import pythoncom
 
 class MockClient(object):
     @classmethod
@@ -87,18 +88,11 @@ class YJTrader(object):
         self.running = False
 
         class EventHandler(object):
-            def __init__(self):
-                print 'init'
-                pass
-
-            def __getattr__(self, name):
-                print name
-                return super(EventHandler, self).__getattr__(self, name)
-
             def OnReceived(this):
                 print 'OnReceived'
                 self.current_price = self.current.GetHeaderValue(7)
                 print self.current_price
+
 
         self.current = self.client.Dispatch("CpForeDib.OvFutCur")
         self.client.WithEvents(self.current, EventHandler)
@@ -107,9 +101,12 @@ class YJTrader(object):
 
         print 'subscribed'
 
-        
         # self.sched = BackgroundScheduler()
         # self.sched.add_job(self.load_minute_bar, CronTrigger(year="*", month="*", day="*", day_of_week="*", minute='*'))
+
+    def load_current(self):
+        pythoncom.PumpWaitingMessages()
+        return self.current_price
 
     def today(self):
         today = date.today()
@@ -227,11 +224,6 @@ class YJTrader(object):
             Trade.objects.create(datetime=timezone.now(), type='b-in-down', price=bar.end, amount=conf.amount_b)
 
 
-
-
 trader = YJTrader()
 
-import time 
-while True:
-    print "This prints once a minute."
-    time.sleep(60)
+

@@ -35,14 +35,14 @@
 
             setInterval(function() {
                 loadStatus()
-            }, 30000)
+            }, 1000)
         })
 
         var last_minute_bar = 0;
         var last_current_price = 0;
 
         function loadStatus(force) {
-            $.getJSON('/status', {'force': true}, function(res) {
+            $.getJSON('/status', {'force': force}, function(res) {
                 showStatus(res.running)
                 $('#amount_a').val(res.configuration.amount_a)
                 $('#amount_b').val(res.configuration.amount_b)

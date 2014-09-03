@@ -65,11 +65,12 @@ def status(request):
 
     try:
         box = trader.trader.box()
-        if now.minute in range(0, 59, 5) or request.GET.get('force', 'false') == 'true':
+        if (now.minute in range(0, 59, 5) and now.second in [1, 2]) or request.GET.get('force', 'false') == 'true':
+            print (now.minute in range(0, 59, 5) and now.second in [1, 2]), request.GET.get('force', 'false')
             trader.trader.load_minute_bar()
 
         data = {
-            'current_price': trader.trader.current_price,
+            'current_price': trader.trader.load_current(),
             'running': trader.trader.running,
             'configuration': model_to_dict(conf)
         }
