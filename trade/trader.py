@@ -1,15 +1,11 @@
 # coding: utf8
 from datetime import datetime, date, timedelta, time
 import random
-from threading import Timer
 import traceback
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
+
 from django.utils import timezone
-import pytz
+
 from trade.models import Box, MinuteBar, Trade, Configuration
-from threading import Thread
-import pythoncom
 
 class MockClient(object):
     @classmethod
@@ -30,6 +26,11 @@ class MockClient(object):
         pass
 
     def GetHeaderValue(self, key):
+        if key == 7:
+            self.value = round(self.next, 2)
+            self.next = self.value + (random.random() - 0.5) * 2
+            return self.value
+
         return self.input[4]
 
     def GetDataValue(self, key, index):
@@ -65,10 +66,22 @@ class MockClient(object):
 
     @classmethod
     def WithEvents(cls, com, trader):
-        pass
+        cls.handler = trader()
 
     def Subscribe(self):
         pass
+
+    @classmethod
+    def PumpWaitingMessages(cls):
+        cls.handler.OnReceived()
+
+
+try:
+    import win32com.client as client
+    import pythoncom
+except:
+    client = MockClient
+    pythoncom = MockClient
 
 
 class NoBoxException(Exception):
@@ -77,25 +90,19 @@ class NoBoxException(Exception):
 
 class YJTrader(object):
     def __init__(self):
-        try:
-            import win32com.client as client
-        except:
-            client = MockClient
 
-        self.client = client
-        self.chart = self.client.Dispatch("CpForeDib.OvFutureChart")
+        self.chart = client.Dispatch("CpForeDib.OvFutureChart")
         self.current_price = 0
         self.running = False
 
         class EventHandler(object):
             def OnReceived(this):
-                print 'OnReceived'
                 self.current_price = self.current.GetHeaderValue(7)
-                print self.current_price
+                print 'current', self.current_price
 
 
-        self.current = self.client.Dispatch("CpForeDib.OvFutCur")
-        self.client.WithEvents(self.current, EventHandler)
+        self.current = client.Dispatch("CpForeDib.OvFutCur")
+        client.WithEvents(self.current, EventHandler)
         self.current.SetInputValue(0, 'CLV14')
         self.current.Subscribe()
 
@@ -205,17 +212,17 @@ class YJTrader(object):
 
                     print 'loaded minute bar ', bar.time, bar.begin, bar.end
 
-                    self.buy_if_matched(bar)
+                    self.enter_if_matched(bar)
 
         except:
             traceback.print_exc()
 
-    def buy_if_matched(self, bar):
+    def enter_if_matched(self, bar):
         if not self.running: return
 
         conf = Configuration.objects.get()
         box = self.box()
-
+        print 'checking', bar
         if bar.begin < box.high < bar.end:
             Trade.objects.create(minutebar=bar, type='a-enter-buy', price=bar.end, amount=conf.amount_a)
             Trade.objects.create(minutebar=bar, type='b-enter-buy', price=bar.end, amount=conf.amount_b)
@@ -223,7 +230,7 @@ class YJTrader(object):
             Trade.objects.create(minutebar=bar, type='a-enter-sell', price=bar.end, amount=conf.amount_a)
             Trade.objects.create(minutebar=bar, type='b-enter-sell', price=bar.end, amount=conf.amount_b)
 
-    def out_if_matched(self):
+    def exit_if_matched(self):
         if not self.running: return
 
         box = self.box()
