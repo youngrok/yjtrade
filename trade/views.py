@@ -76,7 +76,7 @@ def status(request):
         }
         data['box'] = model_to_dict(box)
         data['minute_bars'] = list(MinuteBar.objects.all().order_by('-time').values()[0:15])
-        data['trades'] = list(Trade.objects.all().select_related().order_by('-updated').values()[0:15])
+        data['trades'] = [t.as_dict() for t in Trade.objects.all().select_related().order_by('-updated')[0:15]]
     except:
         traceback.print_exc()
 

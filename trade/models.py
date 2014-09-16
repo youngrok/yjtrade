@@ -1,4 +1,5 @@
 from django.db import models
+from django.forms.models import model_to_dict
 
 
 class Box(models.Model):
@@ -32,6 +33,10 @@ class Trade(models.Model):
     created = models.DateTimeField(auto_now_add=True, db_index=True)
     updated = models.DateTimeField(auto_now=True, db_index=True)
 
+    def as_dict(self):
+        data = model_to_dict(self)
+        data['minutebar'] = model_to_dict(self.minutebar)
+        return data
 
 class Configuration(models.Model):
     amount_a = models.IntegerField()
