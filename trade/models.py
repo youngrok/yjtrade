@@ -36,6 +36,8 @@ class Trade(models.Model):
     def as_dict(self):
         data = model_to_dict(self)
         data['minutebar'] = model_to_dict(self.minutebar)
+        data['created'] = self.created
+        data['updated'] = self.updated
         return data
 
 class Configuration(models.Model):
