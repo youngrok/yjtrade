@@ -78,7 +78,7 @@ def status(request):
         if now.hour < 9: nine_am - timedelta(days=1)
 
         data['box'] = {'low': float(box.low), 'high': float(box.high)}
-        data['minute_bars'] = [t.as_dict() for t in MinuteBar.objects.filter(time__gte=nine_am).order_by('-time')[0:15]]
+        data['minute_bars'] = [t.as_dict() for t in MinuteBar.objects.filter(time__gte=nine_am).order_by('-time')]
         data['trades'] = [t.as_dict() for t in Trade.objects.all().select_related().order_by('-updated')[0:15]]
     except:
         traceback.print_exc()

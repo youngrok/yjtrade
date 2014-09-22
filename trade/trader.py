@@ -1,5 +1,5 @@
 # coding: utf8
-from datetime import datetime, date, timedelta, time
+from datetime import datetime, date, timedelta
 import random
 import traceback
 from django.db.models.aggregates import Max, Min
@@ -193,9 +193,10 @@ class YJTrader(object):
         # if self.sched and self.sched.running:
         #     self.sched.shutdown()
 
-    def load_minute_bar(self, force_enter=False):
+    def load_minute_bar(self, time=None, force_enter=False):
         try:
-            now = datetime.now()
+            if not time:
+                time = datetime.now()
 
             self.chart.SetInputValue(0, 'CLV14')
             self.chart.SetInputValue(1, '2')  # 요청구분
@@ -212,7 +213,7 @@ class YJTrader(object):
                     d = self.chart.GetDataValue(0, i)
                     t = int(self.chart.GetDataValue(1, i))
 
-                    dt = timezone.get_current_timezone().localize(datetime(year=now.year, month=now.month, day=now.day,
+                    dt = timezone.get_current_timezone().localize(datetime(year=time.year, month=time.month, day=time.day,
                                                                            hour=t / 100, minute=t % 100, second=0))
 
                     print t, dt
