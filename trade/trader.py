@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from trade.models import Box, MinuteBar, Trade, Configuration, Price
 
+minute_bar_interval = 15
 
 class MockClient(object):
     initial_price = 50
@@ -153,7 +154,7 @@ class YJTrader(object):
                 self.chart.SetInputValue(4, 15)  # 요청개수
                 self.chart.SetInputValue(5, [5, 4, 1, 0])  # 종가
                 self.chart.SetInputValue(6, ord('m'))  # 분봉
-                self.chart.SetInputValue(7, 60)
+                self.chart.SetInputValue(7, 60) # 분 단위
                 self.chart.SetInputValue(8, '1')
                 self.chart.BlockRequest()
                 num = self.chart.GetHeaderValue(3)
@@ -201,7 +202,7 @@ class YJTrader(object):
             self.chart.SetInputValue(4, 10)  # 요청개수
             self.chart.SetInputValue(5, [0, 1, 3, 4, 5, 6])
             self.chart.SetInputValue(6, ord('m'))  # 분봉
-            self.chart.SetInputValue(7, 15)
+            self.chart.SetInputValue(7, minute_bar_interval) # 분 단위
             self.chart.SetInputValue(8, '1')
             self.chart.BlockRequest()
             num = self.chart.GetHeaderValue(3)
@@ -217,7 +218,7 @@ class YJTrader(object):
                     print t, dt
 
                     bar, created = MinuteBar.objects.get_or_create(time=dt, defaults=dict(
-                        period=time(minute=15),
+                        period=time(minute=minute_bar_interval),
                         low=self.chart.GetDataValue(4, i),
                         high=self.chart.GetDataValue(3, i),
                         begin=self.chart.GetDataValue(2, i),
@@ -254,7 +255,7 @@ class YJTrader(object):
 
         box = self.box()
         ten = MinuteBar.objects.order_by('-time')[:10]
-        mean = sum([bar.end for bar in ten]) / 10.0
+        mean = sum([float(bar.end) for bar in ten]) / 10.0
 
         for trade in Trade.objects.filter(type='a-enter-buy', status='in'):
             if self.current_price <= trade.minutebar.low:

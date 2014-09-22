@@ -65,8 +65,7 @@ def status(request):
 
     try:
         box = trader.trader.box()
-        if (now.minute in range(0, 59, 5) and now.second in [1, 2]) or request.GET.get('force', 'false') == 'true':
-            print (now.minute in range(0, 59, 5) and now.second in [1, 2]), request.GET.get('force', 'false')
+        if (now.minute in range(0, 59, 1) and now.second in [1, 2]) or request.GET.get('force', 'false') == 'true':
             trader.trader.load_minute_bar()
 
         data = {
@@ -75,11 +74,11 @@ def status(request):
             'configuration': model_to_dict(conf)
         }
 
-        ten_am = datetime(year=now.year, month=now.month, day=now.day, hour=10)
-        if now.hour < 10: ten_am - timedelta(days=1)
+        nine_am = datetime(year=now.year, month=now.month, day=now.day, hour=9)
+        if now.hour < 9: nine_am - timedelta(days=1)
 
         data['box'] = {'low': float(box.low), 'high': float(box.high)}
-        data['minute_bars'] = [t.as_dict() for t in MinuteBar.objects.filter(time__gte=ten_am).order_by('-time')[0:15]]
+        data['minute_bars'] = [t.as_dict() for t in MinuteBar.objects.filter(time__gte=nine_am).order_by('-time')[0:15]]
         data['trades'] = [t.as_dict() for t in Trade.objects.all().select_related().order_by('-updated')[0:15]]
     except:
         traceback.print_exc()
