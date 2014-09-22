@@ -16,12 +16,20 @@ class MinuteBar(models.Model):
     high = models.DecimalField(max_digits=10, decimal_places=2)
     low = models.DecimalField(max_digits=10, decimal_places=2)
 
+    def as_dict(self):
+        data = model_to_dict(self)
+        data['begin'] = float(self.begin)
+        data['end'] = float(self.end)
+        data['high'] = float(self.high)
+        data['low'] = float(self.low)
+        return data
+
     def __unicode__(self):
-        return '%s %s %s %s %s %s' % self.time, self.period, self.begin, self.end, self.high, self.low
+        return '%s %s %s %s %s %s' % (self.time, self.period, self.begin, self.end, self.high, self.low)
 
 class Price(models.Model):
-    time = models.DateTimeField(db_index=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    created = models.DateTimeField(db_index=True, auto_now_add=True)
+    value = models.DecimalField(max_digits=10, decimal_places=2)
 
 
 class Trade(models.Model):

@@ -5,13 +5,93 @@
     <title>영재 트레이더</title>
     <link rel="stylesheet" type="text/css" href="${'packages/bootstrap/dist/css/bootstrap.css'|static}">
     <script type="text/javascript" src="${'packages/jquery/dist/jquery.js'|static}"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <style type="text/css">
+        #chart { background:#eee; text-align:center; white-space:nowrap; overflow:auto }
+        #chart div { box-sizing:border-box; -moz-box-sizing:border-box; }
+
+        .box {
+            fill: none;
+            stroke-width: 1;
+            stroke: yellow;
+        }
+
+        .bar.fall { fill: red}
+        .bar {
+          fill: green;
+        }
+
+        .bar:hover {
+          fill: brown;
+        }
+
+        .axis {
+          font: 10px sans-serif;
+        }
+
+        .axis path,
+        .axis line {
+          fill: none;
+          stroke: #000;
+          shape-rendering: crispEdges;
+        }
+
+        .x.axis path {
+          display: none;
+        }
+
+    </style>
     <script type="text/javascript">
+
+        var margin = {top: 20, right: 20, bottom: 30, left: 40},
+            width = 700 - margin.left - margin.right,
+            height = 200 - margin.top - margin.bottom;
+
+        var x = d3.time.scale()
+            .rangeRound([2, 12])
+
+
+        var y = d3.scale.linear()
+            .range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom")
+            .ticks(d3.time.minute, 60)
+##            .tickFormat('%I:%M')
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left")
+            .ticks(10);
+
         $(document).ready(function() {
+
+
+            svg = d3.select("#chart").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+              .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            svg.append("g")
+              .attr("class", "x axis")
+            svg.append("g")
+              .attr("class", "y axis")
+
             $('#initial-box-button').click(function() {
                 $.getJSON('/initial_box', {}, function(res) {
                     $('#box-high').val(res.high)
                     $('#box-low').val(res.low)
+
+##                    var y = d3.scale.linear().range([200, 0])
+##                    var yAxis = d3.svg.axis().scale(y).orient('left')
+##                    var svg = d3.select('#chart').append('svg').attr('width', 30).attr('height', 180)
+##                        .append('g').attr('transform', 'translate(10, 10)')
+##                    svg.append('g').attr('class', 'y axis').call(yAxis)
+
                 })
+
                 return false
             })
             $('#start-button').click(function() {
@@ -40,16 +120,20 @@
 
         var last_minute_bar = 0;
         var last_current_price = 0;
+        var priceHistory = []
+        var boxDrawn = false
 
         function loadStatus(force) {
             $.getJSON('/status', {'force': force}, function(res) {
                 showStatus(res.running)
                 $('#amount_a').val(res.configuration.amount_a)
                 $('#amount_b').val(res.configuration.amount_b)
-                if (res.box) {
+
+                if (res.box && $('#box-high').val() == '' && $('#box-low').val() == '') {
                     $('#box-high').val(res.box.high)
                     $('#box-low').val(res.box.low)
                 }
+
                 $('#minute-bars').html('')
                 for (var i = 0; i < res.minute_bars.length; i++) {
                     var date = new Date(Date.parse(res.minute_bars[i].time))
@@ -60,11 +144,70 @@
                             + '<td>' + res.minute_bars[i].low + '</td>'
                             + '</tr>')
                 }
+
+                var min=Math.min.apply(Math,res.minute_bars.map(function(e) { return e.low})),
+                    max=Math.max.apply(Math,res.minute_bars.map(function(e) { return e.high})),
+                    vscale=($('#chart')[0].offsetHeight-20)/(max-min);
+
+                x.domain(res.minute_bars.reverse().map(function(d, i) { return new Date(Date.parse(d.time)) }));
+                y.domain([0, d3.max(res.minute_bars, function(d) { return d.high; })]);
+
+                if (res.box) {
+                    svg.selectAll(".box")
+                      .data([res.box])
+                    .enter().append("rect")
+                            .attr('class', 'box')
+                      .attr("x", 0)
+                      .attr("width", width)
+                      .attr("y", function(d) { return y(d.high)} )
+                      .attr("height", function(d) { return height - y(Math.abs(d.high- d.low)); })
+
+                    boxDrawn = true
+                }
+
+                svg.select("g.x.axis")
+                  .attr("transform", "translate(0," + height + ")")
+                  .call(xAxis);
+
+                svg.select("g.y.axis")
+                  .call(yAxis)
+
+                svg.selectAll(".bar")
+                  .data(res.minute_bars)
+                .enter().append("rect")
+                  .attr("class", function(d) { return d.begin > d.end ? "bar fall" : "bar"})
+                  .attr("x", function(d) { return x(new Date(Date.parse(d.time))); })
+                  .attr("width", 10)
+                  .attr("y", function(d) { return y(Math.max(d.begin, d.end)); })
+                  .attr("height", function(d) { return height - y(Math.abs(d.begin - d.end)); })
+                  .append('svg:title')
+                  .text(function(d){ return new Date(Date.parse(d.time))+ " " + d.begin+"->"+ d.end+" ("+d.low+"~"+d.high+")" })
+
+##
+##
+##                var bars = d3.select('#chart').selectAll('div.bar').data(res.minute_bars)
+##                bars.enter()
+##                  .append('div').attr('class','bar')
+##                    .append('div').attr('class','range');
+##
+##                bars
+##                  .sort(function(a,b){ return a.time< b.time?-1: a.time> b.time?1:0 })
+##                  .attr('title',function(d){ return new Date(Date.parse(d.time))+ " " + d.begin+"->"+ d.end+" ("+d.low+"~"+d.high+")" })
+##                  .style('width',function(d){ return '10px' })
+##                  .style('height',function(d){ return (d.high-d.low)*vscale+'px' })
+##                  .style('margin-bottom',function(d){ return (d.low-min)*vscale+'px'})
+##                  .select('.range')
+##                    .classed('fall',function(d){ return d.begin > d.end })
+##                    .style('height',function(d){ return Math.abs(d.begin-d.end)*vscale+'px' })
+##                    .style('bottom',function(d){ return (Math.min(d.end, d.begin)-d.low)*vscale+'px'})
+##
+##                bars.exit().remove();
+
                 $('#trades').html('')
                 for (var i = 0; i < res.trades.length; i++) {
                     var date = new Date(Date.parse(res.trades[i].updated))
                     $('#trades').append('<tr><td>' + date.getHours() + ':' + date.getMinutes() + '</td>'
-                            + '<td>' + res.trades[i].minutebar.time + '</td>'
+                            + '<td>' + new Date(Date.parse(res.trades[i].minutebar.time)) + '</td>'
                             + '<td>' + res.trades[i].type + '</td>'
                             + '<td>' + res.trades[i].price + '</td>'
                             + '<td>' + res.trades[i].amount + '</td>'
@@ -72,6 +215,9 @@
                 }
 
                 $('#current-price').html(res.current_price)
+                priceHistory.push(res.current_price)
+
+##                y.domain(d3.extent(priceHistory, function(d) { return d.end; }));
 
                 $('#last-updated').html(new Date())
             })
@@ -92,7 +238,6 @@
 </head>
 <body>
 <div class="container">
-    <h1>영재 트레이더</h1>
     <div class="row">
         <h2>거래 설정</h2>
         <div class="col-sm-6 panel panel-default">
@@ -157,6 +302,10 @@
             </form>
         </div>
 
+        <div class="graph" style="clear:left; height: 200px">
+            <div id="chart" style="height: 200px">
+            </div>
+        </div>
         <table>
             <tbody>
                 <tr>

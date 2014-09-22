@@ -2,12 +2,16 @@
 from datetime import datetime, date, timedelta, time
 import random
 import traceback
+from django.db.models.aggregates import Max, Min
 
 from django.utils import timezone
 
-from trade.models import Box, MinuteBar, Trade, Configuration
+from trade.models import Box, MinuteBar, Trade, Configuration, Price
+
 
 class MockClient(object):
+    initial_price = 50
+
     @classmethod
     def Dispatch(cls, name):
         return cls(name)
@@ -27,40 +31,34 @@ class MockClient(object):
 
     def GetHeaderValue(self, key):
         if key == 7:
-            self.value = round(self.next, 2)
-            self.next = self.value + (random.random() - 0.5) * 2
-            return self.value
+            return self.current
 
         return self.input[4]
 
     def GetDataValue(self, key, index):
-        if self.index < index:
-            self.index = index
-            self.value = self.next
-            self.next = self.value + (random.random() - 0.5) * 10
-
         unit = self.input[7]
         now = datetime.now()
+        nearest_time = timezone.get_current_timezone().localize(
+            datetime(year=now.year, month=now.month, day=now.day,
+                     hour=now.hour, minute=now.minute - (now.minute % unit),
+                     second=0)) - timedelta(minutes=unit * (self.input[4] - index - 1))
+
+        print now, self.input[4], index, nearest_time
+        prices = Price.objects.filter(created__gte=nearest_time - timedelta(minutes=unit),
+                                      created__lt=nearest_time).order_by('created')
 
         if key == 0:
             return now.strftime('%Y%m%d')
         elif key == 1:
-            print index, timezone.get_current_timezone(), now.minute, now.minute % unit
-            nearest_time = timezone.get_current_timezone().localize(
-                datetime(year=now.year, month=now.month, day=now.day,
-                         hour=now.hour, minute=now.minute - (now.minute % unit),
-                         second=0))
-            nearest_time -= timedelta(minutes=unit * (self.input[4] - index - 1))
-            print nearest_time, nearest_time.hour * 100 + nearest_time.minute
             return nearest_time.hour * 100 + nearest_time.minute
         elif key == 2:
-            return self.value
+            return prices[0].value
         elif key == 3:
-            return self.value + random.random() * 10
+            return prices.aggregate(Max('value'))['value__max']
         elif key == 4:
-            return self.value - random.random() * 10
+            return prices.aggregate(Min('value'))['value__min']
         elif key == 5:
-            return self.next
+            return prices[prices.count() - 1].value
         else:
             return self.value
 
@@ -73,7 +71,14 @@ class MockClient(object):
 
     @classmethod
     def PumpWaitingMessages(cls):
-        cls.handler.OnReceived()
+        if Price.objects.count() == 0:
+            Price.objects.create(value=cls.initial_price)
+
+        cls.current = float(Price.objects.order_by('-created')[0].value)
+
+        if random.random() > 0.5:
+            cls.current = round(cls.current + (random.random() - 0.5) * 2, 2)
+            cls.handler.OnReceived()
 
 
 try:
@@ -98,7 +103,8 @@ class YJTrader(object):
         class EventHandler(object):
             def OnReceived(this):
                 self.current_price = self.current.GetHeaderValue(7)
-                print 'current', self.current_price
+                price = Price.objects.create(value=self.current_price)
+                print 'current', price.created, price.value
 
 
         self.current = client.Dispatch("CpForeDib.OvFutCur")
@@ -136,34 +142,38 @@ class YJTrader(object):
             return self.box()
 
         except NoBoxException:
-            now = datetime.now()
-            print 'loading box', now
+            try:
+                now = datetime.now()
+                print 'loading box', now
 
-            self.chart.SetInputValue(0, 'CLV14')
-            self.chart.SetInputValue(1, '2')  # 요청구분
-            self.chart.SetInputValue(4, 15)  # 요청개수
-            self.chart.SetInputValue(5, [5, 4, 1, 0])  # 종가
-            self.chart.SetInputValue(6, ord('m'))  # 분봉
-            self.chart.SetInputValue(7, 60)
-            self.chart.SetInputValue(8, '1')
-            self.chart.BlockRequest()
-            num = self.chart.GetHeaderValue(3)
+                self.chart.SetInputValue(0, 'CLV14')
+                self.chart.SetInputValue(1, '2')  # 요청구분
+                self.chart.SetInputValue(4, 15)  # 요청개수
+                self.chart.SetInputValue(5, [5, 4, 1, 0])  # 종가
+                self.chart.SetInputValue(6, ord('m'))  # 분봉
+                self.chart.SetInputValue(7, 60)
+                self.chart.SetInputValue(8, '1')
+                self.chart.BlockRequest()
+                num = self.chart.GetHeaderValue(3)
 
-            low_values = []
-            high_values = []
-            for i in range(num):
-                d = self.chart.GetDataValue(0, i)
-                t = self.chart.GetDataValue(1, i)
+                low_values = []
+                high_values = []
+                for i in range(num):
+                    d = self.chart.GetDataValue(0, i)
+                    t = self.chart.GetDataValue(1, i)
 
-                if t > 1500.0: continue
-                if t < 900.0: continue
+                    print d, t, self.chart.GetDataValue(3, i)
+                    if t > 1500.0: continue
+                    if t < 900.0: continue
 
-                if str(int(d)) != now.strftime('%Y%m%d'): continue
+                    if str(int(d)) != now.strftime('%Y%m%d'): continue
 
-                low_values.append(self.chart.GetDataValue(3, i))
-                high_values.append(self.chart.GetDataValue(2, i))
+                    low_values.append(self.chart.GetDataValue(3, i))
+                    high_values.append(self.chart.GetDataValue(2, i))
 
-            return Box.objects.create(date=self.today(), high=max(*high_values), low=min(*low_values))
+                return Box.objects.create(date=self.today(), high=max(*high_values), low=min(*low_values))
+            except:
+                traceback.print_exc()
 
         except:
             traceback.print_exc()
@@ -180,7 +190,7 @@ class YJTrader(object):
         # if self.sched and self.sched.running:
         #     self.sched.shutdown()
 
-    def load_minute_bar(self):
+    def load_minute_bar(self, force_enter=False):
         try:
             now = datetime.now()
 
@@ -195,24 +205,30 @@ class YJTrader(object):
             num = self.chart.GetHeaderValue(3)
 
             for i in range(num):
-                d = self.chart.GetDataValue(0, i)
-                t = int(self.chart.GetDataValue(1, i))
+                try:
+                    d = self.chart.GetDataValue(0, i)
+                    t = int(self.chart.GetDataValue(1, i))
 
-                dt = timezone.get_current_timezone().localize(datetime(year=now.year, month=now.month, day=now.day,
-                                                                       hour=t / 100, minute=t % 100, second=0))
+                    dt = timezone.get_current_timezone().localize(datetime(year=now.year, month=now.month, day=now.day,
+                                                                           hour=t / 100, minute=t % 100, second=0))
 
-                print t, dt
+                    print t, dt
 
-                if MinuteBar.objects.filter(time=dt).count() == 0:
-                    bar = MinuteBar.objects.create(time=dt, period=time(minute=15),
-                                                   low=self.chart.GetDataValue(4, i),
-                                                   high=self.chart.GetDataValue(3, i),
-                                                   begin=self.chart.GetDataValue(2, i),
-                                                   end=self.chart.GetDataValue(5, i))
+                    bar, created = MinuteBar.objects.get_or_create(time=dt, defaults=dict(
+                        period=time(minute=15),
+                        low=self.chart.GetDataValue(4, i),
+                        high=self.chart.GetDataValue(3, i),
+                        begin=self.chart.GetDataValue(2, i),
+                        end=self.chart.GetDataValue(5, i)
+                    ))
 
-                    print 'loaded minute bar ', bar.time, bar.begin, bar.end
+                    if created:
+                        print 'loaded minute bar ', bar.time, bar.begin, bar.end
 
-                    self.enter_if_matched(bar)
+                    if created or force_enter:
+                        self.enter_if_matched(bar)
+                except:
+                    pass
 
         except:
             traceback.print_exc()
@@ -222,11 +238,12 @@ class YJTrader(object):
 
         conf = Configuration.objects.get()
         box = self.box()
-        print 'checking', bar
         if bar.begin < box.high < bar.end:
+            print 'enter-buy', bar
             Trade.objects.create(minutebar=bar, type='a-enter-buy', price=bar.end, amount=conf.amount_a)
             Trade.objects.create(minutebar=bar, type='b-enter-buy', price=bar.end, amount=conf.amount_b)
         elif bar.begin > box.low > bar.end:
+            print 'enter-sell', bar
             Trade.objects.create(minutebar=bar, type='a-enter-sell', price=bar.end, amount=conf.amount_a)
             Trade.objects.create(minutebar=bar, type='b-enter-sell', price=bar.end, amount=conf.amount_b)
 

@@ -1,6 +1,6 @@
 import json
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.core.serializers.json import DjangoJSONEncoder
 from django.forms.models import model_to_dict
 from django.http.response import HttpResponse, HttpResponseRedirect
@@ -74,8 +74,12 @@ def status(request):
             'running': trader.trader.running,
             'configuration': model_to_dict(conf)
         }
-        data['box'] = model_to_dict(box)
-        data['minute_bars'] = list(MinuteBar.objects.all().order_by('-time').values()[0:15])
+
+        ten_am = datetime(year=now.year, month=now.month, day=now.day, hour=10)
+        if now.hour < 10: ten_am - timedelta(days=1)
+
+        data['box'] = {'low': float(box.low), 'high': float(box.high)}
+        data['minute_bars'] = [t.as_dict() for t in MinuteBar.objects.filter(time__gte=ten_am).order_by('-time')[0:15]]
         data['trades'] = [t.as_dict() for t in Trade.objects.all().select_related().order_by('-updated')[0:15]]
     except:
         traceback.print_exc()
