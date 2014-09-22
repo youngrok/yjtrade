@@ -302,6 +302,11 @@
             </form>
         </div>
 
+        <div class="alert alert-success">
+            마지막 업데이트 시각: <span id="last-updated"></span>
+            <a href="javascript:loadStatus(true);" class="btn btn-default">지금 업데이트</a>
+        </div>
+
         <div class="graph" style="clear:left; height: 200px">
             <div id="chart" style="height: 200px">
             </div>
@@ -317,10 +322,6 @@
             </tbody>
         </table>
 
-        <div class="alert alert-success">
-            마지막 업데이트 시각: <span id="last-updated"></span>
-            <a href="javascript:loadStatus(true);" class="btn btn-default">지금 업데이트</a>
-        </div>
         <div class="col-sm-6">
             <h4>거래기록</h4>
             <table class="table table-striped">
