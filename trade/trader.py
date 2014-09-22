@@ -105,6 +105,8 @@ class YJTrader(object):
                 self.current_price = self.current.GetHeaderValue(7)
                 price = Price.objects.create(value=self.current_price)
                 print 'current', price.created, price.value
+                self.exit_if_matched()
+
 
 
         self.current = client.Dispatch("CpForeDib.OvFutCur")
@@ -255,7 +257,7 @@ class YJTrader(object):
         mean = sum([bar.end for bar in ten]) / 10.0
 
         for trade in Trade.objects.filter(type='a-enter-buy', status='in'):
-            if trade.current_price <= trade.minutebar.low:
+            if self.current_price <= trade.minutebar.low:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='a-exit-buy-loss', 
                                      price=trade.current_price,
@@ -274,7 +276,7 @@ class YJTrader(object):
                 trade.save()
 
         for trade in Trade.objects.filter(type='a-enter-sell', status='in'):
-            if trade.current_price >= trade.minutebar.low:
+            if self.current_price >= trade.minutebar.high:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='a-exit-sell-loss', 
                                      price=trade.current_price,
@@ -293,7 +295,7 @@ class YJTrader(object):
                 trade.save()
 
         for trade in Trade.objects.filter(type='b-enter-buy', status='in'):
-            if trade.current_price >= box.high + 0.03:
+            if self.current_price <= box.high - 0.03:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='b-exit-buy', 
                                      price=trade.current_price,
@@ -303,7 +305,7 @@ class YJTrader(object):
                 trade.save()
 
         for trade in Trade.objects.filter(type='b-enter-sell', status='in'):
-            if trade.current_price <= box.low - 0.03:
+            if self.current_price >= box.low + 0.03:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='b-exit-sell', 
                                      price=trade.current_price,
