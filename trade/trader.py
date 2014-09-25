@@ -304,7 +304,7 @@ class YJTrader(object):
                 trade.save()
 
         for trade in Trade.objects.filter(type='b-enter-buy', status='in'):
-            if self.current_price <= box.high - 0.03:
+            if self.current_price <= float(box.high) - 0.03:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='b-exit-buy', 
                                      price=self.current_price,
@@ -314,7 +314,7 @@ class YJTrader(object):
                 trade.save()
 
         for trade in Trade.objects.filter(type='b-enter-sell', status='in'):
-            if self.current_price >= box.low + 0.03:
+            if self.current_price >= float(box.low) + 0.03:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='b-exit-sell', 
                                      price=self.current_price,
