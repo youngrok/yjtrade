@@ -242,6 +242,7 @@ class YJTrader(object):
 
         conf = Configuration.objects.get()
         box = self.box()
+        print 'box', box.high, box.low, 'bar', bar.begin, bar.end
         if bar.begin < box.high < bar.end:
             print 'enter-buy', bar
             Trade.objects.create(minutebar=bar, type='a-enter-buy', price=bar.end, amount=conf.amount_a)
