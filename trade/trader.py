@@ -218,16 +218,22 @@ class YJTrader(object):
 
                     print t, dt
 
-                    bar, created = MinuteBar.objects.get_or_create(time=dt, defaults=dict(
+                    data = dict(
                         period=datetime.time(minute=minute_bar_interval),
                         low=self.chart.GetDataValue(4, i),
                         high=self.chart.GetDataValue(3, i),
                         begin=self.chart.GetDataValue(2, i),
                         end=self.chart.GetDataValue(5, i)
-                    ))
+                    )
+                    bar, created = MinuteBar.objects.get_or_create(time=dt, defaults=data)
 
                     if created:
                         print 'loaded minute bar ', bar.time, bar.begin, bar.end
+                    else:
+                        for key in data:
+                            setattr(bar, key, data[key])
+
+                        bar.save()
 
                     if created or force_enter:
                         self.enter_if_matched(bar)
