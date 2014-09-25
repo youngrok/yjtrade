@@ -269,7 +269,7 @@ class YJTrader(object):
             if self.current_price <= trade.minutebar.low:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='a-exit-buy-loss', 
-                                     price=trade.current_price,
+                                     price=self.current_price,
                                      amount=trade.amount,
                                      status='out')
                 trade.status = 'out'
@@ -278,7 +278,7 @@ class YJTrader(object):
             elif ten[0].begin > mean > ten[0].end:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='a-exit-buy-profit', 
-                                     price=trade.current_price,
+                                     price=self.current_price,
                                      amount=trade.amount,
                                      status='out')
                 trade.status = 'out'
@@ -288,7 +288,7 @@ class YJTrader(object):
             if self.current_price >= trade.minutebar.high:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='a-exit-sell-loss', 
-                                     price=trade.current_price,
+                                     price=self.current_price,
                                      amount=trade.amount,
                                      status='out')
                 trade.status = 'out'
@@ -297,7 +297,7 @@ class YJTrader(object):
             elif ten[0].begin < mean < ten[0].end:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='a-exit-sell-profit', 
-                                     price=trade.current_price,
+                                     price=self.current_price,
                                      amount=trade.amount,
                                      status='out')
                 trade.status = 'out'
@@ -307,7 +307,7 @@ class YJTrader(object):
             if self.current_price <= box.high - 0.03:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='b-exit-buy', 
-                                     price=trade.current_price,
+                                     price=self.current_price,
                                      amount=trade.amount,
                                      status='out')
                 trade.status = 'out'
@@ -317,7 +317,7 @@ class YJTrader(object):
             if self.current_price >= box.low + 0.03:
                 Trade.objects.create(minutebar=trade.minutebar, 
                                      type='b-exit-sell', 
-                                     price=trade.current_price,
+                                     price=self.current_price,
                                      amount=trade.amount,
                                      status='out')
                 trade.status = 'out'
