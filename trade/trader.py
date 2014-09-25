@@ -232,7 +232,7 @@ class YJTrader(object):
                     if created or force_enter:
                         self.enter_if_matched(bar)
                 except:
-                    pass
+                    traceback.print_exc()
 
         except:
             traceback.print_exc()
