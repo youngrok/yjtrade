@@ -112,7 +112,7 @@ class YJTrader(object):
 
         self.current = client.Dispatch("CpForeDib.OvFutCur")
         client.WithEvents(self.current, EventHandler)
-        self.current.SetInputValue(0, 'CLV14')
+        self.current.SetInputValue(0, 'CLX14')
         self.current.Subscribe()
 
         print 'subscribed'
@@ -149,7 +149,7 @@ class YJTrader(object):
                 now = datetime.now()
                 print 'loading box', now
 
-                self.chart.SetInputValue(0, 'CLV14')
+                self.chart.SetInputValue(0, 'CLX14')
                 self.chart.SetInputValue(1, '2')  # 요청구분
                 self.chart.SetInputValue(4, 15)  # 요청개수
                 self.chart.SetInputValue(5, [5, 4, 1, 0])  # 종가
