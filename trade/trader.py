@@ -1,5 +1,5 @@
 # coding: utf8
-from datetime import datetime, date, timedelta
+import datetime
 import random
 import traceback
 from django.db.models.aggregates import Max, Min
@@ -38,14 +38,14 @@ class MockClient(object):
 
     def GetDataValue(self, key, index):
         unit = self.input[7]
-        now = datetime.now()
+        now = datetime.datetime.now()
         nearest_time = timezone.get_current_timezone().localize(
-            datetime(year=now.year, month=now.month, day=now.day,
+            datetime.datetime(year=now.year, month=now.month, day=now.day,
                      hour=now.hour, minute=now.minute - (now.minute % unit),
-                     second=0)) - timedelta(minutes=unit * (self.input[4] - index - 1))
+                     second=0)) - datetime.timedelta(minutes=unit * (self.input[4] - index - 1))
 
         print now, self.input[4], index, nearest_time
-        prices = Price.objects.filter(created__gte=nearest_time - timedelta(minutes=unit),
+        prices = Price.objects.filter(created__gte=nearest_time - datetime.timedelta(minutes=unit),
                                       created__lt=nearest_time).order_by('created')
 
         if key == 0:
@@ -125,9 +125,9 @@ class YJTrader(object):
         return self.current_price
 
     def today(self):
-        today = date.today()
-        if datetime.now().hour < 9:
-            today -= timedelta(days=1)
+        today = datetime.date.today()
+        if datetime.datetime.now().hour < 9:
+            today -= datetime.timedelta(days=1)
 
         return today
 
@@ -146,7 +146,7 @@ class YJTrader(object):
 
         except NoBoxException:
             try:
-                now = datetime.now()
+                now = datetime.datetime.now()
                 print 'loading box', now
 
                 self.chart.SetInputValue(0, 'CLX14')
@@ -196,7 +196,7 @@ class YJTrader(object):
     def load_minute_bar(self, time=None, force_enter=False):
         try:
             if not time:
-                time = datetime.now()
+                time = datetime.datetime.now()
 
             self.chart.SetInputValue(0, 'CLV14')
             self.chart.SetInputValue(1, '2')  # 요청구분
@@ -213,13 +213,13 @@ class YJTrader(object):
                     d = self.chart.GetDataValue(0, i)
                     t = int(self.chart.GetDataValue(1, i))
 
-                    dt = timezone.get_current_timezone().localize(datetime(year=time.year, month=time.month, day=time.day,
+                    dt = timezone.get_current_timezone().localize(datetime.datetime(year=time.year, month=time.month, day=time.day,
                                                                            hour=t / 100, minute=t % 100, second=0))
 
                     print t, dt
 
                     bar, created = MinuteBar.objects.get_or_create(time=dt, defaults=dict(
-                        period=time(minute=minute_bar_interval),
+                        period=datetime.time(minute=minute_bar_interval),
                         low=self.chart.GetDataValue(4, i),
                         high=self.chart.GetDataValue(3, i),
                         begin=self.chart.GetDataValue(2, i),
