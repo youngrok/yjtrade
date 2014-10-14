@@ -148,10 +148,10 @@ class MainWindow(QMainWindow):
     def enter_if_matched(self, bar):
         box = self.box
         log('enter test', box.high, box.low, 'bar', bar.begin, bar.end)
-        if bar.begin < box.high < bar.end:
+        if bar.begin <= box.high <= bar.end:
             self.enter(bar, 'a-enter-buy', bar.end, self.amount_a)
             self.enter(bar, 'b-enter-buy', bar.end, self.amount_b)
-        elif bar.begin > box.low > bar.end:
+        elif bar.begin >= box.low >= bar.end:
             self.enter(bar, 'a-enter-sell', bar.end, self.amount_a)
             self.enter(bar, 'b-enter-sell', bar.end, self.amount_b)
 
